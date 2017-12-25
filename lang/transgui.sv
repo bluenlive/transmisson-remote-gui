@@ -1,10 +1,6 @@
 TranslationLanguage=Svenska
 
-<<<<<<< HEAD
-"Remote to local path mappings.~Examples:~/share=\\pch\share~/var/downloads/music=Z:\music"="Mappning remote til lokala sökvägar.~Till exempel:~/share=\\pch\share~/var/downloads/musik=Z:\musik"
-=======
 "Remote to local path mappings.~Examples:~/share=\\pch\share~/var/downloads/music=Z:\music"="Mappning fjärr- till lokala sökvägar.~Till exempel:~/share=\\pch\share~/var/downloads/musik=Z:\musik"
->>>>>>> upstream/master
 %d x %s (have %d)=%d x %s (har %d)
 %ds=%ds
 %s (%d hashfails)=%s (%d checksummefel)

@@ -103,11 +103,7 @@ Minimize to tray=트레이로 최소화
 Name=이름
 No host name specified=호스트 이름 명시되지 않음
 No proxy server specified=프록시 서버 명시되지 않음
-<<<<<<< HEAD
-No to all=No to all
-=======
 No to all=모두 아니요
->>>>>>> upstream/master
 Normal priority=보통 우선권
 normal=보통
 of=중

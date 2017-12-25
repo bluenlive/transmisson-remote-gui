@@ -1,14 +1,5 @@
 TranslationLanguage=简体中文
 
-<<<<<<< HEAD
-"Remote to local path mappings.~Examples:~/share=\\pch\share~/var/downloads/music=Z:\music"="远程路径映射.~比如:~/share=\\pch\share~/var/downloads/music=Z:\music"
-%d x %s (have %d)=%d x %s (下载了 %d)
-%ds=%d 秒
-%s (%d hashfails)=%s (%d 丢弃的块)
-%s (%s done)=%s (%s 完成)
-'%s' has finished downloading='%s' 完成下载
-%s%s%d downloading, %d seeding%s%s, %s=%s%s%d 下载中, %d 做种中%s%s, %s
-=======
 "Remote to local path mappings.~Examples:~/share=\\pch\share~/var/downloads/music=Z:\music"="在下方设置远程路径映射。~例如:~/share=\\pch\share~/var/downloads/music=Z:\music"
 %d x %s (have %d)=%d x %s (已下载 %d 块)
 %ds=%ds
@@ -16,7 +7,6 @@ TranslationLanguage=简体中文
 %s (%s done)=%s (已完成 %s)
 '%s' has finished downloading='%s' 下载完成
 %s%s%d downloading, %d seeding%s%s, %s=#9 %s%s%d 下载中, %d 做种中%s%s, %s #9
->>>>>>> upstream/master
 &All=所有(&A)
 &Close=关闭(&C)
 &Help=帮助(&H)
@@ -270,11 +260,6 @@ Tracker properties=Tracker 服务器属性
 Unlimited=无限制
 Upload speeds (KB/s)=上传速度 (KB/s)
 Use alternate bandwidth settings=使用备用带宽设置
-<<<<<<< HEAD
-A new version of %s is available.~Your current version: %s~The new version: %s~Do you wish to open the Downloads web page?=%s 的更新可用。~当前版本号： %s~新版本号： %s~你想打开下载页吗？
-Advanced=高级
-=======
->>>>>>> upstream/master
 average=平均
 Browse=浏览
 Enable µTP=启用 µTP
