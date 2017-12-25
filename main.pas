@@ -23,9 +23,9 @@ unit Main;
 interface
 
 uses
-  Classes, SysUtils, FileUtil, zstream, LResources, Forms, Controls, 
+  Classes, SysUtils, FileUtil, zstream, LResources, Forms, Controls,
   {$ifdef windows}
-  windows,
+  windows, ShellApi,
   {$else}
   lclintf,
   {$endif windows}
@@ -35,7 +35,7 @@ uses
 
 const
   AppName = 'Transmission Remote GUI';
-  AppVersion = '5.8.3';
+  AppVersion = '5.13';
 
 resourcestring
   sAll = 'All torrents';
@@ -123,6 +123,8 @@ resourcestring
   sTotalSizeToDownload = 'Selected: %s';
   sTotalDownloaded = 'Done: %s';
   sTotalRemain = 'Remaining: %s';
+
+  sUserMenu = 'User Menu';
 
 type
 
@@ -218,6 +220,13 @@ type
     acFolderGrouping: TAction;
     acAdvEditTrackers: TAction;
     acFilterPane: TAction;
+    acMenuShow :  TAction;
+    acBigToolbar: TAction;
+    ImageList32: TImageList;
+    MenuItem103: TMenuItem;
+    MenuShow: TAction;
+    ActionList1: TActionList;
+    acToolbarShow :  TAction;
     acInfoPane: TAction;
     acStatusBar: TAction;
     acCopyPath: TAction;
@@ -230,6 +239,10 @@ type
     acVerifyTorrent: TAction;
     ActionList: TActionList;
     ApplicationProperties: TApplicationProperties;
+    MenuItem501: TMenuItem;
+    MenuItem502: TMenuItem;
+    SearchToolbar: TToolBar;
+    tbSearchCancel: TToolButton;
     txMagLabel: TLabel;
     txMagnetLink: TEdit;
     MenuItem101: TMenuItem;
@@ -492,6 +505,7 @@ type
     procedure acAddTrackerExecute(Sender: TObject);
     procedure acAdvEditTrackersExecute(Sender: TObject);
     procedure acAltSpeedExecute(Sender: TObject);
+    procedure acBigToolbarExecute(Sender: TObject);
     procedure acCheckNewVersionExecute(Sender: TObject);
     procedure acConnectExecute(Sender: TObject);
     procedure acConnOptionsExecute(Sender: TObject);
@@ -503,6 +517,7 @@ type
     procedure acForceStartTorrentExecute(Sender: TObject);
     procedure acHideAppExecute(Sender: TObject);
     procedure acInfoPaneExecute(Sender: TObject);
+    procedure acMenuShowExecute(Sender: TObject);
     procedure acMoveTorrentExecute(Sender: TObject);
     procedure acNewConnectionExecute(Sender: TObject);
     procedure acOpenContainingFolderExecute(Sender: TObject);
@@ -537,6 +552,12 @@ type
     procedure acStatusBarSizesExecute(Sender: TObject);
     procedure acStopAllTorrentsExecute(Sender: TObject);
     procedure acStopTorrentExecute(Sender: TObject);
+    procedure gTorrentsMouseUp(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure lvFilesMouseUp(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure MenuShowExecute(Sender: TObject);
+    procedure acToolbarShowExecute(Sender: TObject);
     procedure acTorrentPropsExecute(Sender: TObject);
     procedure acTrackerGroupingExecute(Sender: TObject);
     procedure acUpdateBlocklistExecute(Sender: TObject);
@@ -594,6 +615,7 @@ type
     procedure miAboutClick(Sender: TObject);
     procedure miCopyLabelClick(Sender: TObject);
     procedure PageInfoChange(Sender: TObject);
+    procedure tbSearchCancelClick(Sender: TObject);
     procedure TorrentsListTimerTimer(Sender: TObject);
     procedure pmFilesPopup(Sender: TObject);
     procedure pmTorrentsPopup(Sender: TObject);
@@ -630,6 +652,8 @@ type
     FFileManagerDefaultParam: string;
     FGlobalHotkey: string;
     fGlobalHotkeyMod: string;
+    FUserDefinedMenuEx: string;
+    FUserDefinedMenuParam: string;
 {$endif windows}
 {$ifdef LCLcarbon}
     FFormActive: boolean;
@@ -679,7 +703,7 @@ type
     procedure UrlLabelClick(Sender: TObject);
     procedure CenterReconnectWindow;
     procedure ProcessPieces(const Pieces: string; PieceCount: integer; const Done: double);
-    function ExecRemoteFile(const FileName: string; SelectFile: boolean): boolean;
+    function ExecRemoteFile(const FileName: string; SelectFile: boolean; Userdef: boolean= false): boolean;
     function GetSelectedTorrents: variant;
     function GetDisplayedTorrents: variant;
     procedure FillDownloadDirs(CB: TComboBox; const CurFolderParam: string);
@@ -703,7 +727,7 @@ type
     function RenameTorrent(TorrentId: integer; const OldPath, NewName: string): boolean;
     procedure FilesTreeStateChanged(Sender: TObject);
     function SelectTorrent(TorrentId, TimeOut: integer): integer;
-    procedure OpenCurrentTorrent(OpenFolderOnly: boolean);
+    procedure OpenCurrentTorrent(OpenFolderOnly: boolean; UserDef: boolean=false);
   public
     procedure FillTorrentsList(list: TJSONArray);
     procedure FillPeersList(list: TJSONArray);
@@ -1366,9 +1390,11 @@ var
   ws: TWindowState;
   i, j: integer;
   R: TRect;
-  bigt: boolean;
   SL: TStringList;
-
+  miUserFiles, miUserTorrents, MI, MI2: TMenuItem;
+  Ico: TIcon;
+  LargeIco, SmallIco : hIcon;
+  MenuCaption: String;
 {$ifdef darwin}
   s: string;
   pic: TPicture;
@@ -1393,7 +1419,7 @@ begin
 
   RegisterURLHandler(@AddTorrentFile);
 {$endif darwin}
-  Application.Title:=AppName;
+  Application.Title:=AppName + ' v' + AppVersion;
   Caption:=Application.Title;
   txTransferHeader.Font.Size:=Font.Size + 2;
   txTorrentHeader.Font.Size:=txTransferHeader.Font.Size;
@@ -1432,17 +1458,6 @@ begin
     Left:=MainToolBar.ClientWidth;
     Parent:=MainToolBar;
   end;
-
-  bigt := Ini.ReadBool('MainForm', 'BigToolbar', False);
-  Ini.WriteBool('MainForm', 'BigToolbar', bigt);
-  if (bigt = True) then begin
-    MainToolBar.ButtonWidth:= 64;      
-    MainToolBar.ButtonHeight:=64
-  end else begin
-    MainToolBar.ButtonWidth:= 23; 
-    MainToolBar.ButtonHeight:=23;
-  end;
-
 
   FDetailsWait:=TProgressImage.Create(panDetailsWait);
   with FDetailsWait do begin
@@ -1527,6 +1542,16 @@ begin
     acInfoPane.Execute;
   if Ini.ReadBool('MainForm', 'StatusBar', acStatusBar.Checked) <> acStatusBar.Checked then
     acStatusBar.Execute;
+  if Ini.ReadBool('MainForm', 'StatusBarSizes', acStatusBarSizes.Checked) <> acStatusBarSizes.Checked then
+    acStatusBarSizes.Execute;
+
+  if Ini.ReadBool('MainForm', 'Menu', acMenuShow.Checked) <> acMenuShow.Checked then
+    acMenuShow.Execute;
+  if Ini.ReadBool('MainForm', 'Toolbar', acToolbarShow.Checked) <> acToolbarShow.Checked then
+    acToolbarShow.Execute;
+  if Ini.ReadBool('MainForm', 'BigToolbar', acBigToolBar.Checked)  <> acBigToolBar.Checked then
+    acBigToolbar.Execute;
+
 
   LoadColumns(gTorrents, 'TorrentsList');
   TorrentColumnsChanged;
@@ -1569,6 +1594,63 @@ begin
    HotKeyID := GlobalAddAtom('TransGUIHotkey');
    PrevWndProc:=windows.WNDPROC(SetWindowLongPtr(Self.Handle,GWL_WNDPROC,PtrInt(@WndCallback)));
    RegisterHotKey(Self.Handle,HotKeyID, VKStringToWord(FGlobalHotkeyMod), VKStringToWord(FGlobalHotkey));
+   // Create UserMenus if any in [UserMenu]
+      j:= 1;
+       repeat
+             MenuCaption := Ini.ReadString('UserMenu','Caption'+IntToStr(j),'nocaption');
+             inc(J);
+       until MenuCaption = 'nocaption';
+       dec(j);
+       if j > 0 then
+         begin
+           if J > 2 then
+             begin
+                  MI := TMenuItem.Create(Self);
+                  MI.Caption:= sUserMenu;
+                  MI.ImageIndex:=6;
+                  pmFiles.Items.Insert(4,MI);
+                  MI2 := TMenuItem.Create(Self);
+                  MI2.Caption:= sUserMenu;
+                  MI2.ImageIndex:=6;
+                  pmTorrents.Items.Insert(2,MI2);
+             end;
+           for i := 1 to j-1 do
+             begin
+                MI := TMenuItem.Create(Self);
+                MI2 := TMenuItem.Create(Self);
+                MI.Caption:= Ini.ReadString('UserMenu','Caption'+IntToStr(i),'');
+                if MI.Caption <> '-' then
+                begin
+                  MI.Tag:= 1000+i;
+                  MI.OnClick:= @acOpenFileExecute;
+                end;
+                try
+                if ExtractIconEx(PChar(Ini.ReadString('UserMenu','ExeName'+IntToStr(i),'')), 0, LargeIco, SmallIco, 1) > null then
+                   begin
+                        Ico := TIcon.Create;
+                        try
+                           Ico.Handle := SmallIco;
+                           Ico.Transparent := True;
+                           Ico.Masked:=True;
+                        finally
+                           ImageList16.AddIcon(Ico);
+                           Ico.Free;
+                           MI.ImageIndex := ImageList16.Count-1;
+                        end;
+                   end;
+                except
+                end;
+                MI2.Caption:= MI.Caption;
+                MI2.Tag:= MI.Tag;
+                MI2.OnClick:=MI.OnClick;
+                MI2.ImageIndex:= MI.ImageIndex;
+                if j > 2 then pmFiles.Items[4].Add(MI)
+                         else pmFiles.Items.Insert(4,MI);
+                if j > 2 then pmTorrents.Items[2].Add(MI2)
+                         else pmTorrents.Items.Insert(2,MI2);
+             end;
+         end;
+   // end Create UserMenu
   {$else}
      {$ifdef darwin}
      FLinuxOpenDoc := Ini.ReadInteger('Interface','FileOpenDoc',0);  // macOS - OpenURL(s, p) = Original version TRGUI
@@ -1582,10 +1664,11 @@ begin
   SL := TStringList.Create;
   try
     Ini.ReadSectionValues('ShortCuts', SL);
-    if SL.Text = ''  then
+    if (SL.Text = '') or (SL.Count <> ActionList.ActionCount) then
       begin
           for i := 0 to ActionList.ActionCount-1 do
           Ini.WriteString('Shortcuts',StringReplace(ActionList.Actions[i].Name,'ac','',[]),ShortcutToText(TAction(ActionList.Actions[i]).ShortCut));
+          if (i<SL.Count-1) and (SL.Text <> '') and (ActionList.ActionByName(SL.Names[i]) = nil) then Ini.WriteString('Shortcuts',StringReplace(ActionList.Actions[i].Name,'ac','',[]),ShortcutToText(TAction(ActionList.Actions[i]).ShortCut));
       end
       else
          for i := 0 to SL.Count - 1 do
@@ -1595,6 +1678,19 @@ begin
               end;
   finally
     SL.Free;
+  end;
+  // StatusBar Panels width
+  i := Ini.ReadInteger('StatusBarPanels','ScreenWidth',0);
+  if Screen.Width <> i then
+      begin
+        Ini.EraseSection('StatusBarPanels');
+        Ini.WriteInteger('StatusBarPanels','ScreenWidth',Screen.Width);
+      end;
+  for i := 0 to StatusBar.Panels.Count-1 do
+  begin
+        j := Ini.ReadInteger('StatusBarPanels',IntToStr(i),0);
+        if j <> 0 then StatusBar.Panels[i].Width:=j else
+                  Ini.WriteInteger('StatusBarPanels',IntToStr(i),Statusbar.Panels[i].Width);
   end;
 end;
 
@@ -1788,6 +1884,15 @@ begin
     RpcObj.AdvInfo:=aiNone;
 end;
 
+procedure TMainForm.acMenuShowExecute(Sender: TObject);
+begin
+    acMenuShow.Checked:=not acMenuShow.Checked;
+    if acMenuShow.Checked = false then
+       MainForm.Menu := nil
+    else
+       MainForm.Menu := MainMenu;
+end;
+
 procedure TMainForm.acMoveTorrentExecute(Sender: TObject);
 var
   ids: variant;
@@ -1894,16 +1999,28 @@ begin
 end;
 
 procedure TMainForm.acOpenFileExecute(Sender: TObject);
+var UserDef: boolean;
+    i: integer;
+    s: string;
 begin
   if gTorrents.Items.Count = 0 then
     exit;
   Application.ProcessMessages;
+  if (Sender is TMenuItem) and (TMenuItem(Sender).Tag > 999) then
+    begin
+         UserDef := true;
+         {$ifdef windows}
+         FUserDefinedMenuEx    := Ini.ReadString('UserMenu','ExeName'+IntToStr(TMenuItem(Sender).Tag-1000),'');
+         FUserDefinedMenuParam := Ini.ReadString('UserMenu','Params'+IntToStr(TMenuItem(Sender).Tag-1000),'');
+         {$endif windows}
+    end
+      else UserDef := false;
   if lvFiles.Focused then begin
     if lvFiles.Items.Count = 0 then exit;
-    ExecRemoteFile(FFilesTree.GetFullPath(lvFiles.Row), False);
+    ExecRemoteFile(FFilesTree.GetFullPath(lvFiles.Row), False, Userdef)
   end
   else
-    OpenCurrentTorrent(False);
+    OpenCurrentTorrent(False, UserDef);
 end;
 
 procedure TMainForm.acOptionsExecute(Sender: TObject);
@@ -2020,6 +2137,21 @@ begin
   end;
   RpcObj.RefreshNow:=RpcObj.RefreshNow + [rtSession];
   AppNormal;
+end;
+
+procedure TMainForm.acBigToolbarExecute(Sender: TObject);
+begin
+   acBigToolbar.Checked:=not acBigToolbar.Checked;
+   if acBigToolbar.Checked then begin
+     MainToolBar.ButtonWidth:= Ini.ReadInteger('MainForm','BigToolBarHeight',64);
+     MainToolBar.ButtonHeight:= MainToolBar.ButtonWidth;
+     MainToolBar.Images:= ImageList32;
+   end else begin
+     MainToolBar.ButtonWidth:= 23;
+     MainToolBar.ButtonHeight:=23;
+     MainToolBar.Images:= ImageList16;
+     end;
+   Ini.WriteBool('MainForm', 'BigToolbar', acBigToolbar.Checked);
 end;
 
 procedure TMainForm.acCheckNewVersionExecute(Sender: TObject);
@@ -2719,6 +2851,10 @@ begin
   Ini.WriteBool('MainForm', 'InfoPane', acInfoPane.Checked);
   Ini.WriteBool('MainForm', 'StatusBar', acStatusBar.Checked);
 
+  Ini.WriteBool('MainForm', 'Menu', acMenuShow.Checked);
+  Ini.WriteBool('MainForm', 'Toolbar', acToolbarShow.Checked);
+
+
   SaveColumns(gTorrents, 'TorrentsList');
   SaveColumns(lvFiles, 'FilesList');
   SaveColumns(lvPeers, 'PeerList');
@@ -3414,7 +3550,7 @@ end;
 
 procedure TMainForm.acShowCountryFlagExecute(Sender: TObject);
 const
-  FlagsURL = 'https://raw.githubusercontent.com/leonsoft-kras/transmisson-remote-gui/master/flags.zip';
+  FlagsURL = 'https://raw.githubusercontent.com/transmission-remote-gui/transgui/master/flags.zip';
 begin
   if not acShowCountryFlag.Checked then
     if GetFlagsArchive = '' then begin
@@ -3465,6 +3601,7 @@ begin
           StatusBar.Panels[6].Text:= '';
           StatusBar.Panels[7].Text:= '';
         end;
+        Ini.WriteBool('MainForm','StatusBarSizes',acStatusBarSizes.Checked);
 end;
 
 procedure TMainForm.acStopAllTorrentsExecute(Sender: TObject);
@@ -3475,6 +3612,37 @@ end;
 procedure TMainForm.acStopTorrentExecute(Sender: TObject);
 begin
   TorrentAction(GetSelectedTorrents, 'torrent-stop');
+end;
+
+procedure TMainForm.gTorrentsMouseUp(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+begin
+     if Button = mbRight then pmTorrents.PopUp;
+end;
+
+procedure TMainForm.lvFilesMouseUp(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+begin
+     if Button = mbRight then pmFiles.PopUp;
+end;
+
+procedure TMainForm.MenuShowExecute(Sender: TObject);
+begin
+ acMenuShow.Checked:=not acMenuShow.Checked;
+ if acMenuShow.Checked = false then
+   MainForm.Menu := nil
+ else
+   MainForm.Menu := MainMenu;
+end;
+
+procedure TMainForm.acToolbarShowExecute(Sender: TObject);
+begin
+
+  acToolbarShow.Checked:=not acToolbarShow.Checked;
+  if acToolbarShow.Checked = false then
+      MainToolBar.Visible:= false
+  else
+      MainToolBar.Visible:= true;
 end;
 
 procedure TMainForm.acTorrentPropsExecute(Sender: TObject);
@@ -3872,6 +4040,8 @@ end;
 procedure TMainForm.edSearchChange(Sender: TObject);
 begin
   DoRefresh(True);
+  if edSearch.Text=  '' then tbSearchCancel.Enabled:=false
+                     else tbSearchCancel.Enabled:=true;
 end;
 
 procedure TMainForm.edSearchKeyDown(Sender: TObject; var Key: Word;
@@ -4294,15 +4464,7 @@ end;
 procedure TMainForm.MainToolBarContextPopup(Sender: TObject; MousePos: TPoint;
   var Handled: Boolean);
 begin
-  if (MainToolBar.ButtonWidth = 23) then begin
-    MainToolBar.ButtonWidth:= 64;
-    MainToolBar.ButtonHeight:=64;
-    Ini.WriteBool('MainForm', 'BigToolbar', True)
-  end else begin
-    MainToolBar.ButtonWidth:= 23;
-    MainToolBar.ButtonHeight:=23;
-    Ini.WriteBool('MainForm', 'BigToolbar', False);
-  end;
+     acBigToolBar.Execute;
 end;
 
 procedure TMainForm.MenuItem101Click(Sender: TObject);
@@ -4534,6 +4696,11 @@ begin
   end;
 end;
 
+procedure TMainForm.tbSearchCancelClick(Sender: TObject);
+begin
+      edSearch.Text:='';
+end;
+
 procedure TMainForm.TorrentsListTimerTimer(Sender: TObject);
 begin
   TorrentsListTimer.Enabled:=False;
@@ -4678,6 +4845,7 @@ begin
       pmConnections.Items[0].Checked:=True;
       miConnect.Items[0].Checked:=True;
     end;
+  tbConnect.Caption := pmConnections.Items[0].Caption;
 end;
 
 procedure TMainForm.DoDisconnect;
@@ -4743,6 +4911,7 @@ begin
   FCurDownSpeedLimit:=-2;
   FCurUpSpeedLimit:=-2;
   FillSpeedsMenu;
+  tbConnect.Caption := Format(SConnectTo,['Transmission']);
 end;
 
 procedure TMainForm.ClearDetailsInfo(Skip: TAdvInfoType);
@@ -5052,7 +5221,7 @@ begin
   path  := StringReplace(path, '>', '_', [rfReplaceAll, rfIgnoreCase]);
   path  := StringReplace(path, '"', '_', [rfReplaceAll, rfIgnoreCase]);
   path  := StringReplace(path, '~', '_', [rfReplaceAll, rfIgnoreCase]);
-  path  := StringReplace(path, '..','_', [rfReplaceAll, rfIgnoreCase]);
+//path  := StringReplace(path, '..','_', [rfReplaceAll, rfIgnoreCase]); bag
   Result:= path;
 end;
 
@@ -5724,8 +5893,12 @@ begin
 
   CheckStatus;
 
-  StatusBar.Panels[1].Text:=Format(sDownSpeed, [GetHumanSize(DownSpeed, 1)]);
-  StatusBar.Panels[2].Text:=Format(sUpSpeed, [GetHumanSize(UpSpeed, 1)]);
+  s := GetHumanSize(FCurDownSpeedLimit*1024,2,'');
+  if s = '' then s := Format(SUnlimited,[]) else s := s + '/s';
+  ss := GetHumanSize(FCurUpSpeedLimit*1024,2,'');
+  if ss = '' then ss := Format(SUnlimited,[]) else ss := ss + '/s';
+  StatusBar.Panels[1].Text:=Format(sDownSpeed, [GetHumanSize(DownSpeed, 1)]) + ' (' + s + ')';
+  StatusBar.Panels[2].Text:=Format(sUpSpeed, [GetHumanSize(UpSpeed, 1)]) + ' (' + ss + ')';
 
 {$ifndef LCLcarbon}
   // There is memory leak in TTrayIcon implementation for Mac.
@@ -6659,7 +6832,7 @@ begin
   end;
 end;
 
-function TMainForm.ExecRemoteFile(const FileName: string; SelectFile: boolean): boolean;
+function TMainForm.ExecRemoteFile(const FileName: string; SelectFile: boolean; Userdef: boolean): boolean;
 
   procedure _Exec(s: string);
   var
@@ -6669,8 +6842,16 @@ function TMainForm.ExecRemoteFile(const FileName: string; SelectFile: boolean): 
     if SelectFile then begin
       if FileExistsUTF8(s) then begin
 {$ifdef mswindows}
-        p:=Format(FFileManagerDefaultParam, [s]); // ALERT  //      p:=Format('/select,"%s"', [s]);
-        s:=FFileManagerDefault;                             //      s:='explorer.exe';
+if Userdef then
+               begin
+                     p:=Format(FUserDefinedMenuParam, [s]);
+                     s:=FUserDefinedMenuEx;
+               end
+               else
+               begin
+                     p:=Format(FFileManagerDefaultParam, [s]); ; // ALERT  //      p:=Format('/select,"%s"', [s]);
+                     s:=FFileManagerDefault;                               //      s:='explorer.exe';
+               end;
 {$else}
         p:='';
         s:=ExtractFilePath(s);
@@ -6684,7 +6865,12 @@ function TMainForm.ExecRemoteFile(const FileName: string; SelectFile: boolean): 
     end;
 
 {$ifdef mswindows}
-       Result:=OpenURL(s, p);
+if Userdef then
+               begin
+                     p := Format(FUserDefinedMenuParam, [s]);
+                     s := FUserDefinedMenuEx;
+               end ;
+                    Result:=OpenURL(s, p);
 {$else}
        if FLinuxOpenDoc = 0 then
           Result := OpenURL(s, p)    // does not work in latest linux very well!!!! old.vers
@@ -6700,10 +6886,24 @@ function TMainForm.ExecRemoteFile(const FileName: string; SelectFile: boolean): 
   end;
 
 var
-  s: string;
+  s,r: string;
+  i: integer;
 begin
   s:=MapRemoteToLocal(FileName);
   if s <> '' then begin
+    if Userdef then
+      begin
+       if (lvFiles.Focused) and (lvFiles.SelCount > 1) then
+          begin
+                r := '';
+                for i := 0 to lvFiles.Items.Count-1 do
+                  if lvFiles.RowSelected[i] then
+                    if r = '' then r := MapRemoteToLocal(FFilesTree.GetFullPath(i)) + '"'  else
+                       r := r + ' "'+ MapRemoteToLocal(FFilesTree.GetFullPath(i)) + '"';
+                s := r;
+          end;
+         // else s := '"' + s + '"';
+      end;
     _Exec(s);
     exit;
   end;
@@ -7357,7 +7557,7 @@ begin
   end;
 end;
 
-procedure TMainForm.OpenCurrentTorrent(OpenFolderOnly: boolean);
+procedure TMainForm.OpenCurrentTorrent(OpenFolderOnly: boolean; UserDef: boolean);
 var
   res: TJSONObject;
   p, s: string;
@@ -7396,7 +7596,7 @@ begin
       finally
         res.Free;
       end;
-    ExecRemoteFile(p, sel);
+    ExecRemoteFile(p, sel, Userdef);
   finally
     AppNormal;
   end;

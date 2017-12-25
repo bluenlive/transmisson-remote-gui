@@ -45,7 +45,7 @@ Harder way.
 
 Build the program by yourself.
 - Make sure you have working Lazarus and Free Pascal compiler installed.
-  * Free Pascal Compiler 2.6.2 and Lazarus 1.0 is used to develop Transmission Remote GUI. You may use different versions of FPC and Lazarus at your own risk.
+  * Free Pascal Compiler 2.6.2 and Lazarus 1.6 is used to develop Transmission Remote GUI. You may use different versions of FPC and Lazarus at your own risk.
 - Download the sources archive and extract it to some folder or perform svn checkout. 
 - Open terminal/command line prompt and cd to the sources folder;
 - Execute "make" command to build the application;
@@ -84,7 +84,8 @@ Alt + F : Info Pane - Files Tab
 ADVANCED PARAMETERS
 
 There are some parameters in the transgui.ini file, that can not be modified via the GUI.
-More info on: https://github.com/leonsoft-kras/transmisson-remote-gui/issues/924
+More info on: https://github.com/transmission-remote-gui/transgui/issues/924  (File Manager & Shortcuts)
+and https://github.com/transmission-remote-gui/transgui/issues/1020  (User Defined Menu -Windows Only-)
 
 [Interface]
 ; Maximum number of elements in the folder history list
@@ -106,3 +107,39 @@ GlobalHotkeyMod={Modifier Key} [MOD_SHIFT , MOD_CONTROL , MOD_ALT , MOD_WIN alon
 
 [Shortcuts]
 ;Modify all the shortcuts of the GUI here
+
+[Usermenu]
+Caption1={Caption in the menu}
+ExeName1={Full path to the program .exe you want to add to menu}
+Params1="%s" {Usually "%s" but some programs may require additional parameters}
+Caption2={same for item 2}
+ExeName2={same for item 2}
+Params2={same for item 2}
+
+[StatusBarPanels]
+;Customize the width of the statusbar panels to fit your language
+;0 is the left most panel and 7 is the right most panel.
+0=327
+1=152
+2=152
+3=130
+4=130
+5=130
+6=130
+7=130
+
+[MainForm]
+BigToolBarHeight=48 {Height of the Big Icon Toolbar if missing default is 64}
+
+*********************************************************************************
+Big Icons
+
+Farm-Fresh Fatcow Web Hosting
+http://www.fatcow.com/
+License Creative Commons (Attribution 3.0 United States)
+https://creativecommons.org/licenses/by/3.0/us/legalcode
+
+Visual Farm
+http://icons8.com/
+License Creative Commons Attribution-No Derivative Works 3.0 Unported
+https://creativecommons.org/licenses/by-nd/3.0/legalcode

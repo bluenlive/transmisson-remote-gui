@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
   <ProjectOptions>
-    <Version Value="10"/>
+    <Version Value="9"/>
     <PathDelim Value="\"/>
     <General>
       <Flags>
@@ -20,9 +20,8 @@
     <VersionInfo>
       <UseVersionInfo Value="True"/>
       <MajorVersionNr Value="5"/>
-      <MinorVersionNr Value="8"/>
-      <RevisionNr Value="3"/>
-      <StringTable CompanyName="Yury Sidorov" FileDescription="Transmission Remote GUI" InternalName="transgui" LegalCopyright="Copyright (c) 2008-2017 by Yury Sidorov &amp; Alexander Petrov" OriginalFilename="transgui.exe" ProductName="Transmission Remote GUI" ProductVersion="5.8.3"/>
+      <MinorVersionNr Value="13"/>
+      <StringTable CompanyName="Yury Sidorov" FileDescription="Transmission Remote GUI" InternalName="transgui" LegalCopyright="Copyright (c) 2008-2017 by Yury Sidorov &amp; Alexander Petrov" OriginalFilename="transgui.exe" ProductName="Transmission Remote GUI" ProductVersion="5.13"/>
     </VersionInfo>
     <BuildModes Count="1">
       <Item1 Name="default" Default="True"/>
@@ -188,7 +187,6 @@
     <SearchPaths>
       <IncludeFiles Value="synapse\source\lib"/>
       <OtherUnitFiles Value="synapse\source\lib;json"/>
-      <UnitOutputDirectory Value="units"/>
     </SearchPaths>
     <Parsing>
       <SyntaxOptions>
@@ -197,6 +195,10 @@
       </SyntaxOptions>
     </Parsing>
     <CodeGeneration>
+      <Optimizations>
+        <OptimizationLevel Value="4"/>
+      </Optimizations>^
+      <UnitOutputDirectory Value="units"/>
       <SmallerCode Value="True"/>
     </CodeGeneration>
     <Linking>

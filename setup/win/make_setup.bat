@@ -6,11 +6,13 @@ if (%2) == () goto usage
 set path=%1;%1\fpc\3.0.2\bin\i386-win32;%path%
 set LAZARUS_DIR=%1
 
-make -C ../.. clean all LAZARUS_DIR=%1
+lazbuild -B ../../transgui.lpi
+make -C ../.. clean LAZARUS_DIR=%1
+make -C ../.. all   LAZARUS_DIR=%1
 if errorlevel 1 goto err
 
 if not (%CODECERT%) == () (
-  signtool.exe sign /d "Transmission Remote GUI" /du "https://github.com/leonsoft-kras/transmisson-remote-gui" /f "%CODECERT%" /v ..\..\transgui.exe
+  signtool.exe sign /d "Transmission Remote GUI" /du "https://github.com/transmission-remote-gui/transgui" /f "%CODECERT%" /v ..\..\transgui.exe
   if errorlevel 1 goto err
 )
 
